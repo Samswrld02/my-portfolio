@@ -1,0 +1,39 @@
+services:
+  frontend:
+    build:
+      context: ./Frontend/next
+      dockerfile: Dockerfile
+    container_name: portfolio_sam_frontend
+    networks:
+      - portfolio-network
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: portfolio_sam_backend
+    env_file: .env
+    networks:
+      - portfolio-network
+
+  caddy:
+    build:
+      context: ./Caddy
+      dockerfile: Dockerfile
+    container_name: portfolio_sam_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - portfolio-network
+
+networks:
+  portfolio-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,8 @@
+.env
+Backend/tmp/
+Backend/server
+**/.DS_Store
+Frontend/next/node_modules/
+Frontend/next/.next/
+Frontend/next/out/
+*.log
