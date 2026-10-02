@@ -1,0 +1,66 @@
+# Production — simple
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [net]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_ADDRESS: ${DB_ADDRESS}
+      GO_PORT: ${GO_PORT}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [net]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/frontend.Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on: [backend]
+    networks: [net]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [frontend, backend]
+    networks: [net]
+
+networks:
+  net:
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

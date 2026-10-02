@@ -1,0 +1,9 @@
+samjaboury.dev, www.samjaboury.dev {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	reverse_proxy frontend:3000
+}
