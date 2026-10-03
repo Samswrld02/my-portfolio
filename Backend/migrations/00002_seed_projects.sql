@@ -22,9 +22,9 @@ INSERT INTO projects (title, description, repo_url, tags, created_at, updated_at
   NOW(3), NOW(3)
 ),
 (
-  'Portfolio platform',
+  'Portfolio site',
   'This site: Next.js + Tailwind + Three.js front, Go Echo API with repository pattern, goose migrations, MariaDB, Docker, and Caddy as reverse proxy.',
-  'https://github.com/Samswrld02/Portfolio-sam',
+  'https://github.com/Samswrld02/my-portfolio',
   'Next,Echo,GORM,Docker,Caddy',
   NOW(3), NOW(3)
 );

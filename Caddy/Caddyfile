@@ -1,4 +1,4 @@
-localhost:80 {
+samjaboury.dev, www.samjaboury.dev {
 	handle /api/* {
 		reverse_proxy backend:8080
 	}

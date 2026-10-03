@@ -21,7 +21,7 @@ export function Contact() {
         </a>
         <span>|</span>
         <a
-          href="samaljaboury1@gmail.com"
+          href="mailto:samaljaboury1@gmail.com"
           className="font-medium text-[var(--amber)] hover:underline"
         >
           Email ↗
