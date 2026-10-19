@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,12 +35,12 @@ func (p *ProjectController) Read(c echo.Context) error {
 }
 
 func (p *ProjectController) Show(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := parseID(c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid id"})
 	}
 
-	project, err := p.projects.FindByID(uint(id))
+	project, err := p.projects.FindByID(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "project not found"})
@@ -50,21 +51,125 @@ func (p *ProjectController) Show(c echo.Context) error {
 	return c.JSON(http.StatusOK, toResponse(*project))
 }
 
-func toResponse(p models.Project) dto.ProjectResponse {
-	tags := []string{}
-	if p.Tags != "" {
-		for _, t := range strings.Split(p.Tags, ",") {
-			t = strings.TrimSpace(t)
-			if t != "" {
-				tags = append(tags, t)
-			}
+func (p *ProjectController) Create(c echo.Context) error {
+	var body dto.ProjectWriteRequest
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
+	}
+	if err := validateWrite(body); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	project := &models.Project{
+		Title:       strings.TrimSpace(body.Title),
+		Description: strings.TrimSpace(body.Description),
+		RepoURL:     strings.TrimSpace(body.RepoURL),
+		Tags:        joinTags(body.Tags),
+	}
+	if err := p.projects.Create(project); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusCreated, toResponse(*project))
+}
+
+func (p *ProjectController) Update(c echo.Context) error {
+	id, err := parseID(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid id"})
+	}
+
+	var body dto.ProjectWriteRequest
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
+	}
+	if err := validateWrite(body); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	project, err := p.projects.FindByID(id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "project not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	project.Title = strings.TrimSpace(body.Title)
+	project.Description = strings.TrimSpace(body.Description)
+	project.RepoURL = strings.TrimSpace(body.RepoURL)
+	project.Tags = joinTags(body.Tags)
+
+	if err := p.projects.Update(project); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, toResponse(*project))
+}
+
+func (p *ProjectController) Delete(c echo.Context) error {
+	id, err := parseID(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid id"})
+	}
+
+	if _, err := p.projects.FindByID(id); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "project not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	if err := p.projects.Delete(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func parseID(c echo.Context) (uint, error) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	return uint(id), err
+}
+
+func validateWrite(body dto.ProjectWriteRequest) error {
+	if strings.TrimSpace(body.Title) == "" {
+		return errors.New("title is required")
+	}
+	if strings.TrimSpace(body.RepoURL) == "" {
+		return errors.New("repoUrl is required")
+	}
+	return nil
+}
+
+func joinTags(tags []string) string {
+	cleaned := make([]string, 0, len(tags))
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t != "" {
+			cleaned = append(cleaned, t)
 		}
 	}
+	return strings.Join(cleaned, ",")
+}
+
+func splitTags(raw string) []string {
+	tags := []string{}
+	if raw == "" {
+		return tags
+	}
+	for _, t := range strings.Split(raw, ",") {
+		t = strings.TrimSpace(t)
+		if t != "" {
+			tags = append(tags, t)
+		}
+	}
+	return tags
+}
+
+func toResponse(p models.Project) dto.ProjectResponse {
 	return dto.ProjectResponse{
 		ID:          p.ID,
 		Title:       p.Title,
 		Description: p.Description,
 		RepoURL:     p.RepoURL,
-		Tags:        tags,
+		Tags:        splitTags(p.Tags),
 	}
 }
