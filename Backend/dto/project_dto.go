@@ -8,3 +8,11 @@ type ProjectResponse struct {
 	RepoURL     string   `json:"repoUrl"`
 	Tags        []string `json:"tags"`
 }
+
+// ProjectWriteRequest is used for create and update.
+type ProjectWriteRequest struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	RepoURL     string   `json:"repoUrl"`
+	Tags        []string `json:"tags"`
+}

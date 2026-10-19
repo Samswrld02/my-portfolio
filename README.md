@@ -36,6 +36,10 @@ Open [http://localhost](http://localhost) (Caddy).
 - `GET /api/health`
 - `GET /api/projects`
 - `GET /api/projects/:id`
+- `POST /api/auth/login` / `POST /api/auth/logout` / `GET /api/auth/me`
+- `POST|PUT|DELETE /api/projects` (auth cookie required)
+
+Admin UI: [/login](http://localhost/login) → [/dashboard](http://localhost/dashboard). Creds from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`.
 
 ## Local without Docker
 
